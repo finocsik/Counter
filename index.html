@@ -192,6 +192,45 @@ body.light .hi-delete:active{background:#fef2f2}
 .install-text{font-size:12px;color:#86c563;font-family:'Share Tech Mono',monospace;letter-spacing:1px;line-height:1.6}
 .install-btn{background:var(--green);border:none;border-radius:6px;padding:8px 14px;color:#000;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:1px;cursor:pointer;white-space:nowrap}
 .install-close{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 4px}
+
+/* MODE SELECTOR */
+.mode-selector{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mode-btn{background:var(--bg3);border:2px solid var(--border);border-radius:10px;padding:14px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:border-color .2s,background .2s}
+.mode-btn.active{border-color:var(--amber);background:var(--bg2)}
+.mode-btn:active{transform:scale(.97)}
+.mode-icon{font-size:24px;line-height:1}
+.mode-label{font-family:'Share Tech Mono',monospace;font-size:11px;font-weight:700;color:var(--text);letter-spacing:2px;margin-top:2px}
+.mode-btn.active .mode-label{color:var(--amber)}
+.mode-desc{font-size:11px;color:var(--muted);font-weight:600;text-align:center;line-height:1.3}
+
+/* PROCESS SCREEN */
+.proc-current-wrap{text-align:center;padding:8px 0 0}
+.proc-current-label{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:4px;color:var(--muted);font-weight:700;margin-bottom:6px}
+.proc-current-time{font-family:'Share Tech Mono',monospace;font-size:52px;font-weight:bold;color:var(--amber);line-height:1;letter-spacing:-1px}
+.proc-current-time.running{color:var(--green)}
+
+/* PROCESS BUTTON */
+.proc-btn{width:210px;height:210px;border-radius:50%;border:3px solid var(--amber);background:linear-gradient(145deg,var(--plus-bg1),var(--plus-bg2));box-shadow:0 0 0 8px var(--plus-ring1),0 0 0 10px var(--plus-ring2),0 8px 40px rgba(245,158,11,.15);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .08s,border-color .2s,box-shadow .2s;-webkit-user-select:none;user-select:none;position:relative;overflow:hidden}
+.proc-btn:active{transform:scale(.93)}
+.proc-btn.running{border-color:var(--green);box-shadow:0 0 0 8px var(--plus-ring1),0 0 0 10px var(--plus-ring2),0 8px 40px rgba(34,197,94,.2)}
+.proc-btn-label{font-family:'Share Tech Mono',monospace;font-size:32px;font-weight:700;color:var(--amber);letter-spacing:4px}
+.proc-btn.running .proc-btn-label{color:var(--green)}
+
+/* PROCESS LOG ROW */
+.proc-log-row{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-bottom:1px solid var(--border);animation:slideIn .2s ease}
+.proc-log-row:last-child{border-bottom:none}
+.proc-log-num{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--muted);font-weight:700;min-width:28px}
+.proc-log-dur{font-family:'Share Tech Mono',monospace;font-size:15px;color:var(--amber);font-weight:bold}
+.proc-log-time{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);font-weight:700}
+
+/* PROCESS STATS GRID */
+.proc-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.proc-stat-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+.proc-stat-box.wide{grid-column:1/-1}
+.proc-stat-label{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:6px;font-weight:700}
+.proc-stat-val{font-family:'Share Tech Mono',monospace;font-size:32px;font-weight:bold;color:var(--amber);line-height:1}
+.proc-stat-val.green{color:var(--green)}
+.proc-stat-val.red{color:var(--red)}
 </style>
 </head>
 <body>
@@ -219,6 +258,22 @@ body.light .hi-delete:active{background:#fef2f2}
       </div>
 
       <div class="card">
+        <div class="card-label">MÉRÉS TÍPUSA</div>
+        <div class="mode-selector">
+          <button class="mode-btn active" id="modeBtnCount" onclick="selectMode('count')">
+            <span class="mode-icon">👥</span>
+            <span class="mode-label">ÁTHALADÁS</span>
+            <span class="mode-desc">Utasok megszámlálása</span>
+          </button>
+          <button class="mode-btn" id="modeBtnProcess" onclick="selectMode('process')">
+            <span class="mode-icon">⏱</span>
+            <span class="mode-label">FOLYAMAT</span>
+            <span class="mode-desc">Időtartam mérése</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
         <div class="card-label">MÉRÉS NEVE *</div>
         <input type="text" class="form-input" id="measureName" placeholder="pl. 14-es busz, reggeli csúcs" maxlength="60">
         <div class="form-hint">// Kötelező mező</div>
@@ -236,7 +291,7 @@ body.light .hi-delete:active{background:#fef2f2}
         <div style="font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--amber);letter-spacing:2px" id="previewTime">—</div>
         <div style="font-size:11px;color:var(--muted);margin-top:4px">Automatikusan rögzítve az indításkor</div>
       </div>
-      <button class="btn-primary" onclick="startMeasure()">▶ &nbsp; MÉRÉS INDÍTÁSA</button>
+      <button class="btn-primary" onclick="startMeasureRouter()">▶ &nbsp; MÉRÉS INDÍTÁSA</button>
     </div>
   </div>
 
@@ -298,7 +353,62 @@ body.light .hi-delete:active{background:#fef2f2}
     </div>
   </div>
 
-  <!-- ═══ HISTORY ═══ -->
+  <!-- ═══ PROCESS COUNTING ═══ -->
+  <div class="screen" id="screenProcess">
+    <div class="timer-bar">
+      <div class="timer-name" id="processTitle">—</div>
+      <div class="timer-value" id="processElapsed">00:00:00</div>
+    </div>
+    <div class="screen-body">
+
+      <!-- current process timer -->
+      <div class="proc-current-wrap">
+        <div class="proc-current-label" id="procCurrentLabel">VÁRAKOZÁS</div>
+        <div class="proc-current-time" id="procCurrentTime">—</div>
+      </div>
+
+      <!-- START/STOP button -->
+      <div class="plus-btn-wrap">
+        <button class="proc-btn" id="procBtn" onclick="toggleProcess()">
+          <span class="proc-btn-label" id="procBtnLabel">START</span>
+        </button>
+      </div>
+
+      <!-- records list -->
+      <div class="card" style="padding:12px">
+        <div class="card-label">MÉRT FOLYAMATOK (<span id="procCount">0</span>)</div>
+        <div class="log-container" id="procLogContainer" style="max-height:200px">
+          <div class="log-empty" id="procLogEmpty">// Még nincs mért folyamat</div>
+        </div>
+      </div>
+
+      <button class="btn-danger" onclick="confirmStopProcess()">⏹ &nbsp; MÉRÉS LEÁLLÍTÁSA</button>
+    </div>
+  </div>
+
+  <!-- ═══ PROCESS SUMMARY ═══ -->
+  <div class="screen" id="screenProcessSummary">
+    <div class="screen-body">
+      <div class="card">
+        <div class="card-label">MÉRÉS ADATAI</div>
+        <div id="procSummaryMeta"></div>
+      </div>
+      <div class="proc-stats-grid" id="procStatsGrid"></div>
+      <div class="card" style="padding:12px">
+        <div class="card-label">ÖSSZES REKORD</div>
+        <div class="log-container" id="procSummaryLog" style="max-height:300px"></div>
+      </div>
+      <div class="card">
+        <div class="card-label">EXPORTÁLÁS</div>
+        <div class="export-buttons">
+          <button class="btn-primary" style="font-size:12px;letter-spacing:2px" onclick="exportProcessCSV()">⬇ CSV</button>
+          <button class="btn-secondary" onclick="exportProcessText()">📋 MÁSOLÁS</button>
+        </div>
+      </div>
+      <button class="btn-secondary" style="width:100%;padding:15px" onclick="goHome()">＋ ÚJ MÉRÉS</button>
+    </div>
+  </div>
+
   <div class="screen" id="screenHistory">
     <div class="history-header">
       <button class="history-back" onclick="goHome()">← VISSZA</button>
@@ -338,6 +448,14 @@ function initTheme() {
 let currentSession = null;
 let timerInterval = null;
 let deferredInstallPrompt = null;
+let selectedMode = 'count'; // 'count' or 'process'
+
+// Process mode state
+let procSession = null;
+let procRunning = false;
+let procCurrentStart = null;
+let procElapsedInterval = null;
+let procCurrentInterval = null;
 
 // ─── PWA INSTALL ──────────────────────────────────────
 window.addEventListener('beforeinstallprompt', e => {
@@ -404,6 +522,26 @@ function init() {
   initTheme();
   updatePreviewTime();
   setInterval(updatePreviewTime, 1000);
+
+  // Space = + gomb a számlálás képernyőn, folyamat gomb a folyamat képernyőn
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space') {
+      if (document.getElementById('screenCount').classList.contains('visible')) {
+        e.preventDefault();
+        const btn = document.getElementById('plusBtn');
+        btn.style.transform = 'scale(0.93)';
+        setTimeout(() => btn.style.transform = '', 120);
+        const rect = btn.getBoundingClientRect();
+        addCount({ currentTarget: btn, clientX: rect.left + rect.width/2, clientY: rect.top + rect.height/2 });
+      } else if (document.getElementById('screenProcess').classList.contains('visible')) {
+        e.preventDefault();
+        const btn = document.getElementById('procBtn');
+        btn.style.transform = 'scale(0.93)';
+        setTimeout(() => btn.style.transform = '', 120);
+        toggleProcess();
+      }
+    }
+  });
 }
 function updatePreviewTime() {
   const el = document.getElementById('previewTime');
@@ -746,6 +884,8 @@ function goHome() {
   document.getElementById('measureName').value = '';
   document.getElementById('measureLocation').value = '';
   document.getElementById('measureNote').value = '';
+  clearInterval(procElapsedInterval);
+  clearInterval(procCurrentInterval);
   showScreen('screenSetup');
   setTopStatus('KÉSZENLÉTI MÓD', false);
 }
@@ -757,6 +897,244 @@ function setTopStatus(html, active) {
   const el = document.getElementById('topStatus');
   el.innerHTML = html;
   el.className = 'topbar-status' + (active ? ' active' : '');
+}
+
+// ─── MODE SELECTOR ────────────────────────────────────
+function selectMode(mode) {
+  selectedMode = mode;
+  document.getElementById('modeBtnCount').classList.toggle('active', mode === 'count');
+  document.getElementById('modeBtnProcess').classList.toggle('active', mode === 'process');
+}
+
+// ─── START MEASURE (routes by mode) ──────────────────
+function startMeasureRouter() {
+  if (selectedMode === 'process') startProcessMeasure();
+  else startMeasure();
+}
+
+// ─── PROCESS MEASUREMENT ─────────────────────────────
+function startProcessMeasure() {
+  const name = document.getElementById('measureName').value.trim();
+  if (!name) {
+    const inp = document.getElementById('measureName');
+    inp.focus(); inp.style.borderColor = 'var(--red)';
+    setTimeout(() => inp.style.borderColor = 'var(--dim)', 2000);
+    return;
+  }
+  procSession = {
+    id: Date.now().toString(),
+    name,
+    location: document.getElementById('measureLocation').value.trim(),
+    note: document.getElementById('measureNote').value.trim(),
+    startTime: new Date().toISOString(),
+    endTime: null,
+    records: []  // [{start, end, durMs}]
+  };
+  procRunning = false;
+  procCurrentStart = null;
+
+  document.getElementById('processTitle').textContent = procSession.name;
+  document.getElementById('procCurrentTime').textContent = '—';
+  document.getElementById('procCurrentLabel').textContent = 'VÁRAKOZÁS';
+  document.getElementById('procCurrentTime').className = 'proc-current-time';
+  document.getElementById('procBtn').className = 'proc-btn';
+  document.getElementById('procBtnLabel').textContent = 'START';
+  document.getElementById('procCount').textContent = '0';
+  document.getElementById('procLogContainer').innerHTML = '<div class="log-empty" id="procLogEmpty">// Még nincs mért folyamat</div>';
+  document.getElementById('processElapsed').textContent = '00:00:00';
+
+  showScreen('screenProcess');
+  setTopStatus('<span class="pulse-dot">●</span> FOLYAMAT MÉRÉS', true);
+
+  // session elapsed timer
+  procElapsedInterval = setInterval(() => {
+    const e = Math.floor((Date.now() - new Date(procSession.startTime)) / 1000);
+    document.getElementById('processElapsed').textContent =
+      `${pad(Math.floor(e/3600))}:${pad(Math.floor((e%3600)/60))}:${pad(e%60)}`;
+  }, 1000);
+}
+
+function toggleProcess() {
+  if (!procRunning) {
+    // START
+    procCurrentStart = new Date();
+    procRunning = true;
+    document.getElementById('procBtn').classList.add('running');
+    document.getElementById('procBtnLabel').textContent = 'STOP';
+    document.getElementById('procCurrentLabel').textContent = 'FOLYAMATBAN';
+    document.getElementById('procCurrentTime').className = 'proc-current-time running';
+
+    procCurrentInterval = setInterval(() => {
+      const ms = Date.now() - procCurrentStart;
+      document.getElementById('procCurrentTime').textContent = formatDurMs(ms);
+    }, 100);
+
+  } else {
+    // STOP – save record
+    const end = new Date();
+    const durMs = end - procCurrentStart;
+    const record = { start: procCurrentStart.toISOString(), end: end.toISOString(), durMs };
+    procSession.records.push(record);
+    procRunning = false;
+    clearInterval(procCurrentInterval);
+
+    // reset button
+    document.getElementById('procBtn').classList.remove('running');
+    document.getElementById('procBtnLabel').textContent = 'START';
+    document.getElementById('procCurrentLabel').textContent = 'VÁRAKOZÁS';
+    document.getElementById('procCurrentTime').textContent = '—';
+    document.getElementById('procCurrentTime').className = 'proc-current-time';
+    document.getElementById('procCount').textContent = procSession.records.length;
+
+    // add to log
+    const empty = document.getElementById('procLogEmpty');
+    if (empty) empty.remove();
+    const container = document.getElementById('procLogContainer');
+    const row = document.createElement('div');
+    row.className = 'proc-log-row';
+    row.innerHTML = `
+      <span class="proc-log-num">#${procSession.records.length}</span>
+      <span class="proc-log-dur">${formatDurMs(durMs)}</span>
+      <span class="proc-log-time">${formatTime(procCurrentStart)} – ${formatTime(end)}</span>
+    `;
+    container.insertBefore(row, container.firstChild);
+  }
+}
+
+function confirmStopProcess() {
+  if (procRunning) {
+    if (!confirm('Folyamat mérés közben állítod le. Az aktuális mérés elvész. Biztosan leállítod?')) return;
+    clearInterval(procCurrentInterval);
+    procRunning = false;
+  }
+  if (procSession.records.length === 0 && !confirm('Nincs rögzített mérés. Leállítod?')) return;
+  clearInterval(procElapsedInterval);
+  procSession.endTime = new Date().toISOString();
+  buildProcessSummary();
+  showScreen('screenProcessSummary');
+  setTopStatus('MÉRÉS BEFEJEZVE', false);
+}
+
+function buildProcessSummary() {
+  const start = new Date(procSession.startTime);
+  const end = new Date(procSession.endTime);
+  const dur = Math.floor((end - start) / 1000);
+  const dStr = (Math.floor(dur/3600)>0?Math.floor(dur/3600)+' ó ':'') + Math.floor((dur%3600)/60) + ' perc ' + (dur%60) + ' mp';
+
+  const rows = [
+    ['Név', procSession.name],
+    procSession.location ? ['Helyszín', procSession.location] : null,
+    procSession.note ? ['Megjegyzés', procSession.note] : null,
+    ['Kezdés', formatDateTime(start)],
+    ['Befejezés', formatDateTime(end)],
+    ['Időtartam', dStr],
+    ['Mért folyamatok', procSession.records.length + ' db'],
+  ].filter(Boolean);
+
+  document.getElementById('procSummaryMeta').innerHTML = rows.map(([k,v]) =>
+    `<div class="meta-row"><span class="meta-key">${k}</span><span class="meta-val">${escHtml(String(v))}</span></div>`
+  ).join('');
+
+  // stats
+  const recs = procSession.records;
+  if (recs.length > 0) {
+    const durs = recs.map(r => r.durMs);
+    const avg = durs.reduce((a,b)=>a+b,0) / durs.length;
+    const min = Math.min(...durs);
+    const max = Math.max(...durs);
+    document.getElementById('procStatsGrid').innerHTML = `
+      <div class="proc-stat-box wide">
+        <div class="proc-stat-label">ÁTLAG IDŐTARTAM</div>
+        <div class="proc-stat-val">${formatDurMs(avg)}</div>
+      </div>
+      <div class="proc-stat-box">
+        <div class="proc-stat-label">LEGGYORSABB</div>
+        <div class="proc-stat-val green">${formatDurMs(min)}</div>
+      </div>
+      <div class="proc-stat-box">
+        <div class="proc-stat-label">LEGLASSABB</div>
+        <div class="proc-stat-val red">${formatDurMs(max)}</div>
+      </div>
+    `;
+  } else {
+    document.getElementById('procStatsGrid').innerHTML = '';
+  }
+
+  // full log
+  const logEl = document.getElementById('procSummaryLog');
+  if (recs.length === 0) {
+    logEl.innerHTML = '<div class="log-empty">// Nincs rögzített adat</div>';
+  } else {
+    logEl.innerHTML = [...recs].reverse().map((r, i) => `
+      <div class="proc-log-row">
+        <span class="proc-log-num">#${recs.length - i}</span>
+        <span class="proc-log-dur">${formatDurMs(r.durMs)}</span>
+        <span class="proc-log-time">${formatTime(new Date(r.start))} – ${formatTime(new Date(r.end))}</span>
+      </div>
+    `).join('');
+  }
+}
+
+function exportProcessCSV() {
+  const bom = '\uFEFF';
+  let csv = bom + 'Sorszám;Kezdés;Befejezés;Időtartam (mp);Időtartam\n';
+  procSession.records.forEach((r, i) => {
+    const durSec = (r.durMs / 1000).toFixed(2);
+    csv += `${i+1};${formatDateTime(new Date(r.start))};${formatDateTime(new Date(r.end))};${durSec};${formatDurMs(r.durMs)}\n`;
+  });
+
+  if (procSession.records.length > 0) {
+    const durs = procSession.records.map(r => r.durMs);
+    const avg = durs.reduce((a,b)=>a+b,0) / durs.length;
+    csv += `\nÖSSZESÍTŐ\nNév;${procSession.name}\n`;
+    if (procSession.location) csv += `Helyszín;${procSession.location}\n`;
+    if (procSession.note) csv += `Megjegyzés;${procSession.note}\n`;
+    csv += `Mért folyamatok;${procSession.records.length} db\n`;
+    csv += `Átlag;${formatDurMs(avg)}\n`;
+    csv += `Leggyorsabb;${formatDurMs(Math.min(...durs))}\n`;
+    csv += `Leglassabb;${formatDurMs(Math.max(...durs))}\n`;
+  }
+
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
+  a.download = `folyamat_meres_${procSession.name.replace(/[^a-z0-9áéíóöőúüű]/gi,'_').toLowerCase()}_${procSession.startTime.slice(0,10)}.csv`;
+  a.click();
+}
+
+function exportProcessText() {
+  if (!procSession.records.length) return;
+  const durs = procSession.records.map(r => r.durMs);
+  const avg = durs.reduce((a,b)=>a+b,0) / durs.length;
+  const text = [
+    `⏱ FOLYAMAT MÉRÉS: ${procSession.name}`,
+    procSession.location ? `📍 ${procSession.location}` : '',
+    `🕐 ${formatDateTime(new Date(procSession.startTime))} → ${formatDateTime(new Date(procSession.endTime))}`,
+    ``,
+    `📊 Mért folyamatok: ${procSession.records.length} db`,
+    `⌀ Átlag: ${formatDurMs(avg)}`,
+    `🟢 Leggyorsabb: ${formatDurMs(Math.min(...durs))}`,
+    `🔴 Leglassabb: ${formatDurMs(Math.max(...durs))}`,
+    procSession.note ? `💬 ${procSession.note}` : '',
+  ].filter(Boolean).join('\n');
+
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).then(() => alert('Vágólapra másolva!'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    alert('Vágólapra másolva!');
+  }
+}
+
+// ms → "0:14" or "1:03:22" format
+function formatDurMs(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return `${h}:${pad(m)}:${pad(s)}`;
+  return `${m}:${pad(s)}`;
 }
 
 // ─── HELPERS ──────────────────────────────────────────

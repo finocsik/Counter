@@ -730,16 +730,43 @@ function showHistory() {
       const start = new Date(s.startTime);
       const end = s.endTime ? new Date(s.endTime) : null;
       const dur = end ? Math.floor((end - start) / 60000) : null;
+      const isProcess = s.type === 'process';
+
+      // jobb oldali érték: folyamatnál átlag, áthaladásnál darabszám
+      let rightVal, rightLabel;
+      if (isProcess) {
+        const recs = s.records || [];
+        if (recs.length > 0) {
+          const avg = recs.reduce((a,b) => a + b.durMs, 0) / recs.length;
+          rightVal = formatDurMs(avg);
+          rightLabel = `⌀ ${recs.length} db`;
+        } else {
+          rightVal = '—';
+          rightLabel = '0 db';
+        }
+      } else {
+        rightVal = s.total;
+        rightLabel = 'áthaladás';
+      }
+
       return `
         <div class="history-item" onclick="showDetail('${s.id}')">
           <div class="hi-top">
-            <div class="hi-name">${escHtml(s.name)}</div>
+            <div style="display:flex;flex-direction:column;gap:2px;max-width:70%">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font-size:12px">${isProcess ? '⏱' : '👥'}</span>
+                <div class="hi-name">${escHtml(s.name)}</div>
+              </div>
+              ${s.location ? `<div class="hi-loc">📍 ${escHtml(s.location)}</div>` : ''}
+            </div>
             <div style="display:flex;align-items:center;gap:8px">
-              <div class="hi-total">${s.total}</div>
+              <div style="text-align:right">
+                <div class="hi-total">${rightVal}</div>
+                <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);font-weight:700">${rightLabel}</div>
+              </div>
               <button class="hi-delete" onclick="event.stopPropagation();confirmDelete('${s.id}')" title="Törlés">🗑</button>
             </div>
           </div>
-          ${s.location ? `<div class="hi-loc">📍 ${escHtml(s.location)}</div>` : ''}
           <div class="hi-bottom" style="margin-top:8px">
             <div class="hi-date">${formatDateTime(start)}</div>
             <div class="hi-dur">${dur !== null ? dur + ' perc' : 'folyamatban'}</div>
@@ -781,40 +808,105 @@ function showDetail(id) {
   ].filter(Boolean);
 
   const detailBody = document.getElementById('detailBody');
-  detailBody.innerHTML = `
-    <div class="card">
-      <div class="card-label">MÉRÉS ADATAI</div>
-      ${rows.map(([k,v])=>`<div class="meta-row"><span class="meta-key">${k}</span><span class="meta-val">${escHtml(String(v))}</span></div>`).join('')}
-    </div>
-    <div class="sum-total">
-      <div class="sum-total-num">${session.total}</div>
-      <div class="sum-total-label">ÖSSZES ÁTHALADÁS</div>
-    </div>
-    <div class="card">
-      <div class="card-label">VETÍTETT FORGALOM</div>
-      <div id="detailProjection"></div>
-    </div>
-    <div class="card">
-      <div class="card-label">FORGALOM / 5 PERC</div>
-      <div id="detailBreakdown"></div>
-    </div>
-    <div class="card">
-      <div class="card-label">EXPORTÁLÁS</div>
-      <div class="export-buttons">
-        <button class="btn-primary" style="font-size:12px;letter-spacing:2px" onclick="exportCSV(loadSessionById('${session.id}'))">⬇ CSV</button>
-        <button class="btn-secondary" onclick="exportEmail(loadSessionById('${session.id}'))">✉ EMAIL</button>
-        <button class="btn-secondary" onclick="exportText(loadSessionById('${session.id}'))">📋 MÁSOLÁS</button>
-      </div>
-    </div>
-  `;
 
-  buildProjection('detailProjection', session);
-  buildBreakdown('detailBreakdown', session);
+  if (session.type === 'process') {
+    // ── FOLYAMAT DETAIL ──
+    const recs = session.records || [];
+    const durs = recs.map(r => r.durMs);
+    const avg = durs.length ? durs.reduce((a,b)=>a+b,0)/durs.length : 0;
+    const minD = durs.length ? Math.min(...durs) : 0;
+    const maxD = durs.length ? Math.max(...durs) : 0;
+
+    detailBody.innerHTML = `
+      <div class="card">
+        <div class="card-label">MÉRÉS ADATAI</div>
+        ${rows.map(([k,v])=>`<div class="meta-row"><span class="meta-key">${k}</span><span class="meta-val">${escHtml(String(v))}</span></div>`).join('')}
+        <div class="meta-row"><span class="meta-key">Rekordok</span><span class="meta-val">${recs.length} db</span></div>
+      </div>
+      ${durs.length ? `
+      <div class="proc-stats-grid">
+        <div class="proc-stat-box wide">
+          <div class="proc-stat-label">ÁTLAG IDŐTARTAM</div>
+          <div class="proc-stat-val">${formatDurMs(avg)}</div>
+        </div>
+        <div class="proc-stat-box">
+          <div class="proc-stat-label">LEGGYORSABB</div>
+          <div class="proc-stat-val green">${formatDurMs(minD)}</div>
+        </div>
+        <div class="proc-stat-box">
+          <div class="proc-stat-label">LEGLASSABB</div>
+          <div class="proc-stat-val red">${formatDurMs(maxD)}</div>
+        </div>
+      </div>` : ''}
+      <div class="card" style="padding:12px">
+        <div class="card-label">ÖSSZES REKORD</div>
+        <div class="log-container" style="max-height:280px">
+          ${recs.length ? [...recs].reverse().map((r,i)=>`
+            <div class="proc-log-row">
+              <span class="proc-log-num">#${recs.length-i}</span>
+              <span class="proc-log-dur">${formatDurMs(r.durMs)}</span>
+              <span class="proc-log-time">${formatTime(new Date(r.start))} – ${formatTime(new Date(r.end))}</span>
+            </div>`).join('') : '<div class="log-empty">// Nincs adat</div>'}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">EXPORTÁLÁS</div>
+        <div class="export-buttons">
+          <button class="btn-primary" style="font-size:12px;letter-spacing:2px" onclick="exportProcessCSVById('${session.id}')">⬇ CSV</button>
+          <button class="btn-secondary" onclick="exportProcessTextById('${session.id}')">📋 MÁSOLÁS</button>
+        </div>
+      </div>
+    `;
+  } else {
+    // ── ÁTHALADÁS DETAIL ──
+    detailBody.innerHTML = `
+      <div class="card">
+        <div class="card-label">MÉRÉS ADATAI</div>
+        ${rows.map(([k,v])=>`<div class="meta-row"><span class="meta-key">${k}</span><span class="meta-val">${escHtml(String(v))}</span></div>`).join('')}
+      </div>
+      <div class="sum-total">
+        <div class="sum-total-num">${session.total}</div>
+        <div class="sum-total-label">ÖSSZES ÁTHALADÁS</div>
+      </div>
+      <div class="card">
+        <div class="card-label">VETÍTETT FORGALOM</div>
+        <div id="detailProjection"></div>
+      </div>
+      <div class="card">
+        <div class="card-label">FORGALOM / 5 PERC</div>
+        <div id="detailBreakdown"></div>
+      </div>
+      <div class="card">
+        <div class="card-label">EXPORTÁLÁS</div>
+        <div class="export-buttons">
+          <button class="btn-primary" style="font-size:12px;letter-spacing:2px" onclick="exportCSV(loadSessionById('${session.id}'))">⬇ CSV</button>
+          <button class="btn-secondary" onclick="exportEmail(loadSessionById('${session.id}'))">✉ EMAIL</button>
+          <button class="btn-secondary" onclick="exportText(loadSessionById('${session.id}'))">📋 MÁSOLÁS</button>
+        </div>
+      </div>
+    `;
+    buildProjection('detailProjection', session);
+    buildBreakdown('detailBreakdown', session);
+  }
+
   showScreen('screenDetail');
 }
 
 function loadSessionById(id) {
   return loadSessions().find(s => s.id === id) || null;
+}
+
+function exportProcessCSVById(id) {
+  const s = loadSessionById(id);
+  if (!s) return;
+  procSession = s;
+  exportProcessCSV();
+}
+function exportProcessTextById(id) {
+  const s = loadSessionById(id);
+  if (!s) return;
+  procSession = s;
+  exportProcessText();
 }
 
 // ─── EXPORT ───────────────────────────────────────────
@@ -1010,6 +1102,8 @@ function confirmStopProcess() {
   if (procSession.records.length === 0 && !confirm('Nincs rögzített mérés. Leállítod?')) return;
   clearInterval(procElapsedInterval);
   procSession.endTime = new Date().toISOString();
+  procSession.type = 'process';
+  saveSession(procSession);
   buildProcessSummary();
   showScreen('screenProcessSummary');
   setTopStatus('MÉRÉS BEFEJEZVE', false);

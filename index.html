@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#07070f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Utasmérő">
+<title>Utasmérő</title>
+
+<!-- PWA Manifest inline -->
+<link rel="manifest" href="data:application/json,{
+  %22name%22:%22Utasforgalom%20Sz%C3%A1ml%C3%A1l%C3%B3%22,
+  %22short_name%22:%22Utasm%C3%A9r%C5%91%22,
+  %22start_url%22:%22.%22,
+  %22display%22:%22standalone%22,
+  %22background_color%22:%22%2307070f%22,
+  %22theme_color%22:%22%2307070f%22,
+  %22icons%22:[{%22src%22:%22data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%2307070f'/%3E%3Ctext x='256' y='340' font-size='300' text-anchor='middle' fill='%23f59e0b' font-family='monospace'%3E%2B%3C/text%3E%3C/svg%3E%22,%22sizes%22:%22512x512%22,%22type%22:%22image/svg+xml%22}]
+}">
+
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg:#07070f; --bg2:#0d0d1a; --bg3:#111122;
+  --border:#1e1e3a; --amber:#f59e0b; --amber2:#d97706;
+  --green:#22c55e; --red:#ef4444;
+  --text:#e2e2f0; --muted:#555577; --dim:#333355;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0.35;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E")}
+.app{width:100%;max-width:420px;min-height:100vh;display:flex;flex-direction:column;position:relative;z-index:1}
+
+/* TOPBAR */
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.topbar-title{font-family:'Share Tech Mono',monospace;color:var(--amber);font-size:13px;letter-spacing:3px}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.topbar-status{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px}
+.topbar-status.active{color:var(--green)}
+.btn-history{background:none;border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer}
+.btn-history:active{background:var(--bg3)}
+
+/* SCREENS */
+.screen{display:none;flex-direction:column;flex:1}
+.screen.visible{display:flex}
+.screen-body{padding:20px;display:flex;flex-direction:column;gap:16px;flex:1}
+
+/* CARD */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px}
+.card-label{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--muted);margin-bottom:10px}
+
+/* FORM */
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--dim);border-radius:8px;padding:14px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:600;outline:none;transition:border-color .2s}
+.form-input:focus{border-color:var(--amber)}
+.form-input::placeholder{color:var(--muted);font-weight:400}
+.form-hint{font-size:11px;color:var(--dim);margin-top:6px;font-family:'Share Tech Mono',monospace}
+
+/* BUTTONS */
+.btn-primary{width:100%;background:linear-gradient(135deg,var(--amber),var(--amber2));border:none;border-radius:10px;padding:18px;color:#000;font-family:'Share Tech Mono',monospace;font-size:15px;letter-spacing:3px;cursor:pointer;box-shadow:0 0 30px rgba(245,158,11,.25);transition:transform .1s}
+.btn-primary:active{transform:scale(.98)}
+.btn-danger{width:100%;background:var(--bg2);border:1px solid var(--red);border-radius:10px;padding:15px;color:var(--red);font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:2px;cursor:pointer}
+.btn-danger:active{background:#2a0a0a}
+.btn-secondary{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:15px;color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:1px;cursor:pointer}
+.btn-secondary:active{background:#1a1a0a}
+.btn-undo{width:100%;background:var(--bg2);border:1px solid var(--dim);border-radius:8px;padding:11px;color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:1px;cursor:pointer}
+.btn-undo:active{background:var(--bg3)}
+
+/* TIMER BAR */
+.timer-bar{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;justify-content:space-between;align-items:center}
+.timer-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
+.timer-value{font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--amber);letter-spacing:2px}
+
+/* COUNTER */
+.counter-display{text-align:center;padding:8px 0 4px}
+.counter-num{font-family:'Share Tech Mono',monospace;font-size:80px;font-weight:bold;color:#fff;line-height:1;letter-spacing:-2px;text-shadow:0 0 40px rgba(245,158,11,.2)}
+.counter-sub{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:4px;color:var(--muted);margin-top:4px}
+
+/* PLUS BUTTON */
+.plus-btn-wrap{display:flex;align-items:center;justify-content:center;padding:6px 20px 10px}
+.plus-btn{width:210px;height:210px;border-radius:50%;background:linear-gradient(145deg,#12203a,#0a1220);border:2px solid #1e3a5a;box-shadow:0 0 0 8px #0d0d1a,0 0 0 10px #1e1e3a,0 8px 40px rgba(245,158,11,.12),inset 0 1px 8px rgba(255,255,255,.04);cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;transition:transform .08s,box-shadow .15s;-webkit-user-select:none;user-select:none}
+.plus-btn:active{transform:scale(.93);box-shadow:0 0 0 8px #0d0d1a,0 0 0 10px #1e1e3a,0 2px 16px rgba(245,158,11,.06)}
+.plus-icon{font-size:96px;line-height:1;color:var(--amber);font-family:'Share Tech Mono',monospace;pointer-events:none;text-shadow:0 0 30px rgba(245,158,11,.45);margin-top:-6px}
+
+/* RIPPLE */
+.ripple{position:absolute;border-radius:50%;transform:scale(0);animation:ripple-anim .6s linear;pointer-events:none;background:rgba(245,158,11,.22)}
+@keyframes ripple-anim{to{transform:scale(5);opacity:0}}
+
+/* LOG */
+.log-container{background:var(--bg3);border-radius:8px;overflow:hidden;max-height:140px;overflow-y:auto}
+.log-container::-webkit-scrollbar{width:3px}
+.log-container::-webkit-scrollbar-thumb{background:var(--dim);border-radius:3px}
+.log-row{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);animation:slideIn .2s ease}
+.log-row:last-child{border-bottom:none}
+@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1}}
+.log-time{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted)}
+.log-count{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--amber);font-weight:bold}
+.log-empty{padding:20px;text-align:center;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:2px}
+
+/* SUMMARY */
+.meta-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.meta-key{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted)}
+.meta-val{font-size:13px;font-weight:600;color:var(--text);text-align:right;max-width:65%}
+.sum-total{text-align:center;padding:24px;background:var(--bg2);border:1px solid var(--border);border-radius:12px}
+.sum-total-num{font-family:'Share Tech Mono',monospace;font-size:80px;color:var(--amber);line-height:1;font-weight:bold}
+.sum-total-label{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:4px;margin-top:8px}
+.breakdown-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)}
+.breakdown-row:last-child{border-bottom:none}
+.breakdown-time{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted)}
+.breakdown-count{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--amber)}
+.export-buttons{display:flex;gap:10px}
+
+/* HISTORY SCREEN */
+.history-header{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:12px}
+.history-back{background:none;border:1px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:11px;cursor:pointer}
+.history-back:active{background:var(--bg3)}
+.history-title{font-family:'Share Tech Mono',monospace;color:var(--amber);font-size:12px;letter-spacing:2px}
+.history-count{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);margin-left:auto}
+
+.history-list{padding:16px;display:flex;flex-direction:column;gap:10px;flex:1;overflow-y:auto}
+.history-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px 20px;text-align:center}
+.history-empty-icon{font-size:48px;opacity:.3}
+.history-empty-text{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:2px;line-height:1.8}
+
+.history-item{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;transition:border-color .2s}
+.history-item:active{background:var(--bg3)}
+.history-item:hover{border-color:var(--amber)}
+.hi-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.hi-name{font-size:15px;font-weight:700;color:var(--text);max-width:70%}
+.hi-total{font-family:'Share Tech Mono',monospace;font-size:20px;color:var(--amber);font-weight:bold}
+.hi-bottom{display:flex;justify-content:space-between;align-items:center}
+.hi-date{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted)}
+.hi-dur{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim)}
+.hi-loc{font-size:11px;color:var(--dim);margin-top:4px}
+
+.hi-delete{background:none;border:none;color:var(--dim);font-size:16px;cursor:pointer;padding:4px 8px;border-radius:4px}
+.hi-delete:active{color:var(--red);background:#2a0a0a}
+
+/* DETAIL SCREEN */
+.detail-header{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:12px}
+
+/* MISC */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.pulse-dot{display:inline-block;animation:pulse 1.5s infinite}
+
+/* INSTALL BANNER */
+.install-banner{background:linear-gradient(135deg,#1a2a0a,#0f1a0a);border:1px solid #2a4a1a;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.install-text{font-size:12px;color:#86c563;font-family:'Share Tech Mono',monospace;letter-spacing:1px;line-height:1.6}
+.install-btn{background:var(--green);border:none;border-radius:6px;padding:8px 14px;color:#000;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:1px;cursor:pointer;white-space:nowrap}
+.install-close{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 4px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="topbar-title">UTASMÉRŐ</div>
+    <div class="topbar-right">
+      <div class="topbar-status" id="topStatus">KÉSZENLÉTI MÓD</div>
+      <button class="btn-history" onclick="showHistory()">📋 ELŐZMÉNYEK</button>
+    </div>
+  </div>
+
+  <!-- ═══ SETUP ═══ -->
+  <div class="screen visible" id="screenSetup">
+    <div class="screen-body">
+
+      <div id="installBanner" style="display:none">
+        <div class="install-banner">
+          <div class="install-text">📱 Telepítsd az appot<br>a home screenre!</div>
+          <button class="install-btn" onclick="installApp()">TELEPÍTÉS</button>
+          <button class="install-close" onclick="dismissInstall()">✕</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">MÉRÉS NEVE *</div>
+        <input type="text" class="form-input" id="measureName" placeholder="pl. 14-es busz, reggeli csúcs" maxlength="60">
+        <div class="form-hint">// Kötelező mező</div>
+      </div>
+      <div class="card">
+        <div class="card-label">HELYSZÍN (opcionális)</div>
+        <input type="text" class="form-input" id="measureLocation" placeholder="pl. Kelebia megálló, 1. kapu" maxlength="60">
+      </div>
+      <div class="card">
+        <div class="card-label">MEGJEGYZÉS (opcionális)</div>
+        <input type="text" class="form-input" id="measureNote" placeholder="pl. Eső volt, késett a jármű" maxlength="100">
+      </div>
+      <div class="card">
+        <div class="card-label" style="margin-bottom:6px">MÉRÉS KEZDÉSI IDEJE</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--amber);letter-spacing:2px" id="previewTime">—</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">Automatikusan rögzítve az indításkor</div>
+      </div>
+      <button class="btn-primary" onclick="startMeasure()">▶ &nbsp; MÉRÉS INDÍTÁSA</button>
+    </div>
+  </div>
+
+  <!-- ═══ COUNTING ═══ -->
+  <div class="screen" id="screenCount">
+    <div class="timer-bar">
+      <div class="timer-name" id="countTitle">—</div>
+      <div class="timer-value" id="timerDisplay">00:00:00</div>
+    </div>
+    <div class="screen-body">
+      <div class="counter-display">
+        <div class="counter-num" id="numTotal">0</div>
+        <div class="counter-sub">ÁTHALADÁS</div>
+      </div>
+      <div class="plus-btn-wrap">
+        <button class="plus-btn" id="plusBtn" onclick="addCount(event)">
+          <span class="plus-icon">+</span>
+        </button>
+      </div>
+      <button class="btn-undo" onclick="undoLast()">↩ &nbsp; VISSZAVON</button>
+      <div class="card" style="padding:12px">
+        <div class="card-label">UTOLSÓ ÁTHALADÁSOK</div>
+        <div class="log-container" id="logContainer">
+          <div class="log-empty" id="logEmpty">// Még nincs rögzített adat</div>
+        </div>
+      </div>
+      <button class="btn-danger" onclick="confirmStop()">⏹ &nbsp; MÉRÉS LEÁLLÍTÁSA</button>
+    </div>
+  </div>
+
+  <!-- ═══ SUMMARY ═══ -->
+  <div class="screen" id="screenSummary">
+    <div class="screen-body">
+      <div class="card">
+        <div class="card-label">MÉRÉS ADATAI</div>
+        <div id="summaryMeta"></div>
+      </div>
+      <div class="sum-total">
+        <div class="sum-total-num" id="sumTotal">0</div>
+        <div class="sum-total-label">ÖSSZES ÁTHALADÁS</div>
+      </div>
+      <div class="card">
+        <div class="card-label">FORGALOM / 5 PERC</div>
+        <div id="breakdownTable"></div>
+      </div>
+      <div class="card">
+        <div class="card-label">EXPORTÁLÁS</div>
+        <div class="export-buttons">
+          <button class="btn-primary" style="font-size:12px;letter-spacing:2px" onclick="exportCSV(currentSession)">⬇ CSV</button>
+          <button class="btn-secondary" onclick="exportEmail(currentSession)">✉ EMAIL</button>
+          <button class="btn-secondary" onclick="exportText(currentSession)">📋 MÁSOLÁS</button>
+        </div>
+      </div>
+      <button class="btn-secondary" style="width:100%;padding:15px" onclick="goHome()">＋ ÚJ MÉRÉS</button>
+    </div>
+  </div>
+
+  <!-- ═══ HISTORY ═══ -->
+  <div class="screen" id="screenHistory">
+    <div class="history-header">
+      <button class="history-back" onclick="goHome()">← VISSZA</button>
+      <div class="history-title">ELŐZMÉNYEK</div>
+      <div class="history-count" id="historyCount"></div>
+    </div>
+    <div id="historyBody" style="flex:1;overflow-y:auto"></div>
+  </div>
+
+  <!-- ═══ DETAIL ═══ -->
+  <div class="screen" id="screenDetail">
+    <div class="detail-header">
+      <button class="history-back" onclick="showHistory()">← VISSZA</button>
+      <div class="history-title" id="detailTitle">RÉSZLETEK</div>
+    </div>
+    <div class="screen-body" id="detailBody"></div>
+  </div>
+
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────
+let currentSession = null;
+let timerInterval = null;
+let deferredInstallPrompt = null;
+
+// ─── PWA INSTALL ──────────────────────────────────────
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  if (!localStorage.getItem('installDismissed')) {
+    document.getElementById('installBanner').style.display = 'block';
+  }
+});
+function installApp() {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(() => {
+      deferredInstallPrompt = null;
+      document.getElementById('installBanner').style.display = 'none';
+    });
+  }
+}
+function dismissInstall() {
+  localStorage.setItem('installDismissed', '1');
+  document.getElementById('installBanner').style.display = 'none';
+}
+
+// ─── SERVICE WORKER ───────────────────────────────────
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE = 'utasmero-v1';
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])));
+      self.skipWaiting();
+    });
+    self.addEventListener('activate', e => {
+      e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+      self.clients.claim();
+    });
+    self.addEventListener('fetch', e => {
+      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('./'))));
+    });
+  `;
+  const swBlob = new Blob([swCode], {type:'application/javascript'});
+  const swUrl = URL.createObjectURL(swBlob);
+  navigator.serviceWorker.register(swUrl).catch(()=>{});
+}
+
+// ─── STORAGE ─────────────────────────────────────────
+function loadSessions() {
+  try { return JSON.parse(localStorage.getItem('utasmero_sessions') || '[]'); }
+  catch { return []; }
+}
+function saveSession(session) {
+  const sessions = loadSessions();
+  const idx = sessions.findIndex(s => s.id === session.id);
+  if (idx >= 0) sessions[idx] = session;
+  else sessions.unshift(session);
+  localStorage.setItem('utasmero_sessions', JSON.stringify(sessions));
+}
+function deleteSession(id) {
+  const sessions = loadSessions().filter(s => s.id !== id);
+  localStorage.setItem('utasmero_sessions', JSON.stringify(sessions));
+}
+
+// ─── INIT ─────────────────────────────────────────────
+function init() {
+  updatePreviewTime();
+  setInterval(updatePreviewTime, 1000);
+}
+function updatePreviewTime() {
+  const el = document.getElementById('previewTime');
+  if (el) el.textContent = formatDateTime(new Date());
+}
+
+// ─── SETUP ────────────────────────────────────────────
+function startMeasure() {
+  const name = document.getElementById('measureName').value.trim();
+  if (!name) {
+    const inp = document.getElementById('measureName');
+    inp.focus(); inp.style.borderColor = 'var(--red)';
+    setTimeout(() => inp.style.borderColor = 'var(--dim)', 2000);
+    return;
+  }
+  currentSession = {
+    id: Date.now().toString(),
+    name,
+    location: document.getElementById('measureLocation').value.trim(),
+    note: document.getElementById('measureNote').value.trim(),
+    startTime: new Date().toISOString(),
+    endTime: null,
+    total: 0,
+    log: []
+  };
+  document.getElementById('countTitle').textContent = currentSession.name;
+  document.getElementById('numTotal').textContent = '0';
+  document.getElementById('logContainer').innerHTML = '<div class="log-empty" id="logEmpty">// Még nincs rögzített adat</div>';
+  showScreen('screenCount');
+  setTopStatus('<span class="pulse-dot">●</span> AKTÍV MÉRÉS', true);
+  timerInterval = setInterval(updateTimer, 1000);
+}
+
+// ─── TIMER ────────────────────────────────────────────
+function updateTimer() {
+  if (!currentSession) return;
+  const e = Math.floor((Date.now() - new Date(currentSession.startTime)) / 1000);
+  document.getElementById('timerDisplay').textContent =
+    `${pad(Math.floor(e/3600))}:${pad(Math.floor((e%3600)/60))}:${pad(e%60)}`;
+}
+
+// ─── COUNT ────────────────────────────────────────────
+function addCount(event) {
+  const ts = new Date().toISOString();
+  currentSession.total++;
+  currentSession.log.push({ ts });
+
+  document.getElementById('numTotal').textContent = currentSession.total;
+
+  const btn = event.currentTarget;
+  const ripple = document.createElement('span');
+  const rect = btn.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height) * 2;
+  ripple.className = 'ripple';
+  ripple.style.cssText = `width:${size}px;height:${size}px;left:${event.clientX-rect.left-size/2}px;top:${event.clientY-rect.top-size/2}px`;
+  btn.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 600);
+
+  const empty = document.getElementById('logEmpty');
+  if (empty) empty.remove();
+  const container = document.getElementById('logContainer');
+  const row = document.createElement('div');
+  row.className = 'log-row';
+  row.innerHTML = `<span class="log-time">${formatTime(new Date(ts))}</span><span class="log-count">#${currentSession.total}</span>`;
+  container.insertBefore(row, container.firstChild);
+}
+
+function undoLast() {
+  if (!currentSession.log.length) return;
+  currentSession.log.pop();
+  currentSession.total = Math.max(0, currentSession.total - 1);
+  document.getElementById('numTotal').textContent = currentSession.total;
+  const c = document.getElementById('logContainer');
+  if (c.firstChild && !c.firstChild.id) c.removeChild(c.firstChild);
+  if (!currentSession.log.length) c.innerHTML = '<div class="log-empty" id="logEmpty">// Még nincs rögzített adat</div>';
+}
+
+// ─── STOP ─────────────────────────────────────────────
+function confirmStop() {
+  if (currentSession.total === 0 && !confirm('Nincs rögzített adat. Leállítod a mérést?')) return;
+  clearInterval(timerInterval);
+  currentSession.endTime = new Date().toISOString();
+  saveSession(currentSession);
+  buildSummary(currentSession);
+  showScreen('screenSummary');
+  setTopStatus('MÉRÉS BEFEJEZVE', false);
+}
+
+// ─── SUMMARY ──────────────────────────────────────────
+function buildSummary(session) {
+  const start = new Date(session.startTime);
+  const end = new Date(session.endTime);
+  const dur = Math.floor((end - start) / 1000);
+  const h = Math.floor(dur/3600), m = Math.floor((dur%3600)/60), s = dur%60;
+  const dStr = (h>0?h+' ó ':'')+m+' perc '+s+' mp';
+
+  const rows = [
+    ['Név', session.name],
+    session.location ? ['Helyszín', session.location] : null,
+    session.note ? ['Megjegyzés', session.note] : null,
+    ['Kezdés', formatDateTime(start)],
+    ['Befejezés', formatDateTime(end)],
+    ['Időtartam', dStr],
+  ].filter(Boolean);
+
+  document.getElementById('summaryMeta').innerHTML = rows.map(([k,v])=>`
+    <div class="meta-row"><span class="meta-key">${k}</span><span class="meta-val">${v}</span></div>
+  `).join('');
+  document.getElementById('sumTotal').textContent = session.total;
+  buildBreakdown('breakdownTable', session);
+}
+
+function buildBreakdown(tableId, session) {
+  const table = document.getElementById(tableId);
+  if (!session.log.length) {
+    table.innerHTML = '<div style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--muted);padding:8px 0">// Nincs adat</div>';
+    return;
+  }
+  const start = new Date(session.startTime);
+  const buckets = {};
+  session.log.forEach(e => {
+    const b = Math.floor((new Date(e.ts) - start) / 300000);
+    buckets[b] = (buckets[b]||0) + 1;
+  });
+  table.innerHTML = Object.keys(buckets).map(Number).sort((a,b)=>a-b).map(k => `
+    <div class="breakdown-row">
+      <span class="breakdown-time">${formatMinuteFromSession(k*5, session)} – ${formatMinuteFromSession(k*5+5, session)}</span>
+      <span class="breakdown-count">${buckets[k]} áthaladás</span>
+    </div>
+  `).join('');
+}
+
+// ─── HISTORY ──────────────────────────────────────────
+function showHistory() {
+  const sessions = loadSessions();
+  document.getElementById('historyCount').textContent = sessions.length + ' MÉRÉS';
+
+  const body = document.getElementById('historyBody');
+  if (!sessions.length) {
+    body.innerHTML = `
+      <div class="history-empty">
+        <div class="history-empty-icon">📋</div>
+        <div class="history-empty-text">// Még nincs mentett mérés<br>Indíts el egy mérést,<br>és automatikusan elmentődik.</div>
+      </div>`;
+  } else {
+    body.innerHTML = '<div class="history-list">' + sessions.map(s => {
+      const start = new Date(s.startTime);
+      const end = s.endTime ? new Date(s.endTime) : null;
+      const dur = end ? Math.floor((end - start) / 60000) : null;
+      return `
+        <div class="history-item" onclick="showDetail('${s.id}')">
+          <div class="hi-top">
+            <div class="hi-name">${escHtml(s.name)}</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="hi-total">${s.total}</div>
+              <button class="hi-delete" onclick="event.stopPropagation();confirmDelete('${s.id}')" title="Törlés">🗑</button>
+            </div>
+          </div>
+          ${s.location ? `<div class="hi-loc">📍 ${escHtml(s.location)}</div>` : ''}
+          <div class="hi-bottom" style="margin-top:8px">
+            <div class="hi-date">${formatDateTime(start)}</div>
+            <div class="hi-dur">${dur !== null ? dur + ' perc' : 'folyamatban'}</div>
+          </div>
+        </div>
+      `;
+    }).join('') + '</div>';
+  }
+  showScreen('screenHistory');
+  setTopStatus('ELŐZMÉNYEK', false);
+}
+
+function confirmDelete(id) {
+  if (confirm('Törlöd ezt a mérést?')) {
+    deleteSession(id);
+    showHistory();
+  }
+}
+
+// ─── DETAIL ───────────────────────────────────────────
+function showDetail(id) {
+  const session = loadSessions().find(s => s.id === id);
+  if (!session) return;
+
+  document.getElementById('detailTitle').textContent = escHtml(session.name).toUpperCase();
+
+  const start = new Date(session.startTime);
+  const end = session.endTime ? new Date(session.endTime) : null;
+  const dur = end ? Math.floor((end - start) / 1000) : null;
+  const dStr = dur !== null ? ((Math.floor(dur/3600)>0?Math.floor(dur/3600)+' ó ':'') + Math.floor((dur%3600)/60) + ' perc ' + (dur%60) + ' mp') : '—';
+
+  const rows = [
+    ['Név', session.name],
+    session.location ? ['Helyszín', session.location] : null,
+    session.note ? ['Megjegyzés', session.note] : null,
+    ['Kezdés', formatDateTime(start)],
+    ['Befejezés', end ? formatDateTime(end) : '—'],
+    ['Időtartam', dStr],
+  ].filter(Boolean);
+
+  const detailBody = document.getElementById('detailBody');
+  detailBody.innerHTML = `
+    <div class="card">
+      <div class="card-label">MÉRÉS ADATAI</div>
+      ${rows.map(([k,v])=>`<div class="meta-row"><span class="meta-key">${k}</span><span class="meta-val">${escHtml(String(v))}</span></div>`).join('')}
+    </div>
+    <div class="sum-total">
+      <div class="sum-total-num">${session.total}</div>
+      <div class="sum-total-label">ÖSSZES ÁTHALADÁS</div>
+    </div>
+    <div class="card">
+      <div class="card-label">FORGALOM / 5 PERC</div>
+      <div id="detailBreakdown"></div>
+    </div>
+    <div class="card">
+      <div class="card-label">EXPORTÁLÁS</div>
+      <div class="export-buttons">
+        <button class="btn-primary" style="font-size:12px;letter-spacing:2px" onclick="exportCSV(loadSessionById('${session.id}'))">⬇ CSV</button>
+        <button class="btn-secondary" onclick="exportEmail(loadSessionById('${session.id}'))">✉ EMAIL</button>
+        <button class="btn-secondary" onclick="exportText(loadSessionById('${session.id}'))">📋 MÁSOLÁS</button>
+      </div>
+    </div>
+  `;
+
+  buildBreakdown('detailBreakdown', session);
+  showScreen('screenDetail');
+}
+
+function loadSessionById(id) {
+  return loadSessions().find(s => s.id === id) || null;
+}
+
+// ─── EXPORT ───────────────────────────────────────────
+function exportCSV(session) {
+  if (!session) return;
+  const bom = '\uFEFF';
+  let csv = bom + 'Sorszám;Időpont\n';
+  session.log.forEach((e,i) => csv += `${i+1};${formatDateTime(new Date(e.ts))}\n`);
+  csv += `\nMÉRÉS ÖSSZESÍTŐ\nNév;${session.name}\n`;
+  if (session.location) csv += `Helyszín;${session.location}\n`;
+  if (session.note) csv += `Megjegyzés;${session.note}\n`;
+  csv += `Kezdés;${formatDateTime(new Date(session.startTime))}\n`;
+  if (session.endTime) csv += `Befejezés;${formatDateTime(new Date(session.endTime))}\n`;
+  csv += `Összes áthaladás;${session.total}\n`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
+  a.download = `utasmeres_${session.name.replace(/[^a-z0-9áéíóöőúüű]/gi,'_').toLowerCase()}_${session.startTime.slice(0,10)}.csv`;
+  a.click();
+}
+function exportEmail(session) {
+  if (!session) return;
+  const m = session.endTime ? Math.floor((new Date(session.endTime)-new Date(session.startTime))/60000) : 0;
+  const sub = encodeURIComponent(`Utasmérés: ${session.name} – ${formatDateShort(new Date(session.startTime))}`);
+  const body = encodeURIComponent([
+    'UTASFORGALOM MÉRÉSI EREDMÉNY','',
+    `Mérés neve: ${session.name}`,
+    session.location?`Helyszín: ${session.location}`:'',
+    session.note?`Megjegyzés: ${session.note}`:'',
+    '',
+    `Kezdés: ${formatDateTime(new Date(session.startTime))}`,
+    session.endTime?`Befejezés: ${formatDateTime(new Date(session.endTime))}`:'',
+    `Időtartam: ${m} perc`,'',
+    `Összes áthaladás: ${session.total}`
+  ].filter(s=>s!==null).join('\n'));
+  window.location.href = `mailto:?subject=${sub}&body=${body}`;
+}
+function exportText(session) {
+  if (!session) return;
+  const text = [
+    `📊 UTASMÉRÉS: ${session.name}`,
+    session.location?`📍 ${session.location}`:'',
+    `🕐 ${formatDateTime(new Date(session.startTime))}${session.endTime?' → '+formatDateTime(new Date(session.endTime)):''}`,
+    `👥 Összes áthaladás: ${session.total}`,
+    session.note?`💬 ${session.note}`:''
+  ].filter(Boolean).join('\n');
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).then(() => alert('Vágólapra másolva!'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    alert('Vágólapra másolva!');
+  }
+}
+
+// ─── NAVIGATION ───────────────────────────────────────
+function goHome() {
+  document.getElementById('measureName').value = '';
+  document.getElementById('measureLocation').value = '';
+  document.getElementById('measureNote').value = '';
+  showScreen('screenSetup');
+  setTopStatus('KÉSZENLÉTI MÓD', false);
+}
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('visible'));
+  document.getElementById(id).classList.add('visible');
+}
+function setTopStatus(html, active) {
+  const el = document.getElementById('topStatus');
+  el.innerHTML = html;
+  el.className = 'topbar-status' + (active ? ' active' : '');
+}
+
+// ─── HELPERS ──────────────────────────────────────────
+function pad(n) { return String(n).padStart(2,'0'); }
+function formatDateTime(d) { return d.toLocaleDateString('hu-HU')+' '+d.toLocaleTimeString('hu-HU'); }
+function formatTime(d) { return d.toLocaleTimeString('hu-HU'); }
+function formatDateShort(d) { return d.toLocaleDateString('hu-HU'); }
+function formatMinuteFromSession(totalMin, session) {
+  const base = new Date(new Date(session.startTime).getTime() + totalMin * 60000);
+  return base.toLocaleTimeString('hu-HU', {hour:'2-digit', minute:'2-digit'});
+}
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+init();
+</script>
+</body>
+</html>

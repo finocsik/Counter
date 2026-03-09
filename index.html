@@ -141,6 +141,15 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opa
 /* DETAIL SCREEN */
 .detail-header{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:12px}
 
+/* PROJECTION */
+.proj-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.proj-box{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 8px;text-align:center}
+.proj-box.highlight{background:#0f1a2a;border-color:#1e3a5a}
+.proj-period{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:6px}
+.proj-num{font-family:'Share Tech Mono',monospace;font-size:26px;font-weight:bold;color:var(--amber);line-height:1}
+.proj-unit{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);margin-top:4px;letter-spacing:1px}
+.proj-note{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--border);line-height:1.7}
+
 /* MISC */
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 .pulse-dot{display:inline-block;animation:pulse 1.5s infinite}
@@ -234,6 +243,10 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opa
       <div class="sum-total">
         <div class="sum-total-num" id="sumTotal">0</div>
         <div class="sum-total-label">ÖSSZES ÁTHALADÁS</div>
+      </div>
+      <div class="card">
+        <div class="card-label">VETÍTETT FORGALOM</div>
+        <div id="summaryProjection"></div>
       </div>
       <div class="card">
         <div class="card-label">FORGALOM / 5 PERC</div>
@@ -451,7 +464,46 @@ function buildSummary(session) {
     <div class="meta-row"><span class="meta-key">${k}</span><span class="meta-val">${v}</span></div>
   `).join('');
   document.getElementById('sumTotal').textContent = session.total;
+  buildProjection('summaryProjection', session);
   buildBreakdown('breakdownTable', session);
+}
+
+function buildProjection(containerId, session) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!session.endTime || session.total === 0) {
+    el.innerHTML = '<div style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--muted);padding:4px 0">// Nincs elég adat</div>';
+    return;
+  }
+  const durMin = (new Date(session.endTime) - new Date(session.startTime)) / 60000;
+  const rate = session.total / durMin;
+  const p10 = Math.round(rate * 10);
+  const p30 = Math.round(rate * 30);
+  const p60 = Math.round(rate * 60);
+  const actualMin = Math.round(durMin);
+  el.innerHTML = `
+    <div class="proj-grid">
+      <div class="proj-box">
+        <div class="proj-period">10 PERC</div>
+        <div class="proj-num">${p10}</div>
+        <div class="proj-unit">utas</div>
+      </div>
+      <div class="proj-box highlight">
+        <div class="proj-period">30 PERC</div>
+        <div class="proj-num">${p30}</div>
+        <div class="proj-unit">utas</div>
+      </div>
+      <div class="proj-box highlight">
+        <div class="proj-period">1 ÓRA</div>
+        <div class="proj-num">${p60}</div>
+        <div class="proj-unit">utas</div>
+      </div>
+    </div>
+    <div class="proj-note">
+      // ${actualMin} perces mérés alapján (${session.total} áthaladás)<br>
+      // Ráta: ~${rate.toFixed(1)} utas / perc
+    </div>
+  `;
 }
 
 function buildBreakdown(tableId, session) {
@@ -552,6 +604,10 @@ function showDetail(id) {
       <div class="sum-total-label">ÖSSZES ÁTHALADÁS</div>
     </div>
     <div class="card">
+      <div class="card-label">VETÍTETT FORGALOM</div>
+      <div id="detailProjection"></div>
+    </div>
+    <div class="card">
       <div class="card-label">FORGALOM / 5 PERC</div>
       <div id="detailBreakdown"></div>
     </div>
@@ -565,6 +621,7 @@ function showDetail(id) {
     </div>
   `;
 
+  buildProjection('detailProjection', session);
   buildBreakdown('detailBreakdown', session);
   showScreen('screenDetail');
 }
@@ -585,6 +642,15 @@ function exportCSV(session) {
   csv += `Kezdés;${formatDateTime(new Date(session.startTime))}\n`;
   if (session.endTime) csv += `Befejezés;${formatDateTime(new Date(session.endTime))}\n`;
   csv += `Összes áthaladás;${session.total}\n`;
+  if (session.endTime) {
+    const durMin = (new Date(session.endTime) - new Date(session.startTime)) / 60000;
+    const rate = session.total / durMin;
+    csv += `\nVETÍTETT FORGALOM\n`;
+    csv += `10 perc;${Math.round(rate*10)} utas\n`;
+    csv += `30 perc;${Math.round(rate*30)} utas\n`;
+    csv += `1 óra;${Math.round(rate*60)} utas\n`;
+    csv += `Ráta;${rate.toFixed(1)} utas/perc\n`;
+  }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
   a.download = `utasmeres_${session.name.replace(/[^a-z0-9áéíóöőúüű]/gi,'_').toLowerCase()}_${session.startTime.slice(0,10)}.csv`;
